@@ -50,6 +50,19 @@ def extract_model_name(model_name):
 
 
 def train_one_epoch(model, train_dataloader, optimizer, scheduler, device, epoch, grad_accum_steps=4):
+
+    # 设备配置
+    if torch.cuda.is_available():
+        device = "cuda"
+        # 检查 GPU 数量
+        gpu_count = torch.cuda.device_count()
+        logger.info(f"检测到 {gpu_count} 个 GPU")
+        if gpu_count > 1:
+            logger.info("使用 DataParallel 进行多 GPU 训练")
+            model = torch.nn.DataParallel(model)
+    else:
+        device = "cpu"
+
     """
     训练一个 epoch (无 Scaler 全精度版)
     """
