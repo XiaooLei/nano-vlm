@@ -1,8 +1,8 @@
-# Nano VLM Model
+# Light VLM Model
 
-## Overview
+[![Hugging Face Model](https://img.shields.io/badge/Hugging%20Face-light--vlm--0.6b-yellow)](https://huggingface.co/brightxiaolei/light-vlm-0.6b)
 
-Nano VLM is a lightweight multimodal vision-language model built upon the Qwen2.5-0.5B-instruct language model and CLIP vision encoder. It processes image and text inputs to enable capabilities such as image captioning and visual question answering.
+Light VLM is a lightweight multimodal vision-language model built upon the Qwen2.5-0.5B-instruct language model and CLIP vision encoder. It processes image and text inputs to enable capabilities such as image captioning and visual question answering.
 
 
 ## Demonstration
@@ -101,7 +101,7 @@ The server will start on `http://0.0.0.0:8000`.
 curl -X POST "http://localhost:8000/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "qwen2.5-vlm-0.5b",
+    "model": "light-vlm-0.6b",
     "messages": [
       {
         "role": "user",
@@ -122,7 +122,7 @@ import requests
 
 url = "http://localhost:8000/v1/chat/completions"
 payload = {
-    "model": "qwen2.5-vlm-0.5b",
+    "model": "light-vlm-0.6b",
     "messages": [
         {
             "role": "user",
