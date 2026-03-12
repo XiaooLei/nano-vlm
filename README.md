@@ -213,14 +213,14 @@ Below are some examples demonstrating the model's capabilities on various vision
 | | |
 |---|---|
 | **Image** | ![Person Image](http://images.cocodataset.org/val2017/000000397133.jpg) |
-| **Prompt** | `<|im_start|>user\n<image>\nIs there a person in the image?\n<|im_end|>\n<|im_start|>assistant\n` |
+| **Prompt** | <|im_start|>user\n<image>\nIs there a person in the image?\n<|im_end|>\n<|im_start|>assistant\n |
 | **Response** | Yes, there is a person in the image. There is a man wearing a chef's uniform in the kitchen. |
 | **Expected** | Yes |
 
 | | |
 |---|---|
 | **Image** | ![Birthday Image](http://images.cocodataset.org/val2017/000000001000.jpg) |
-| **Prompt** | `<|im_start|>user\n<image>\nHow many people are in this image?\n<|im_end|>\n<|im_start|>assistant\n` |
+| **Prompt** | <|im_start|>user\n<image>\nHow many people are in this image?\n<|im_end|>\n<|im_start|>assistant\n |
 | **Response** | There appear to be multiple people in the image, including several children and what looks like adults, possibly around 8-10 people in total. |
 
 ## License
