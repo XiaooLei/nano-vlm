@@ -30,7 +30,7 @@ CLIP Visual Features (768-dim) → Linear(768, 2048) → LayerNorm → GELU → 
 ## Installation
 
 ```bash
-pip install transformers torch pillow peft
+pip install transformers torch pillow peft fastapi uvicorn pydantic requests
 ```
 
 ## Quick Start
@@ -41,17 +41,118 @@ pip install transformers torch pillow peft
 from lab6_nano_vlm.model import VLMModel
 import torch
 
-# Recommended: use bf16 or fp32 (Qwen2.5 can be unstable with fp16)
 target_dtype = torch.float32
 
 model = VLMModel(
     llm_name="Qwen/Qwen2.5-0.5B-Instruct",
     vision_name="openai/clip-vit-base-patch16",
-    train_mode="both"  # Options: "both", "lora", "projector"
+    train_mode="both"
 )
 ```
 
-### Special Token Configuration
+### API Deployment
+
+The project provides a FastAPI-based OpenAI-compatible API server.
+
+#### Start the API Server
+
+```bash
+python api.py
+```
+
+The server will start on `http://0.0.0.0:8000`.
+
+#### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | API root info |
+| `/health` | GET | Health check |
+| `/v1/models` | GET | List available models |
+| `/v1/models/{model_id}` | GET | Get model info |
+| `/v1/chat/completions` | POST | Chat completions (OpenAI-compatible) |
+
+#### API Usage Example
+
+**cURL:**
+
+```bash
+curl -X POST "http://localhost:8000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5-vlm-0.5b",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "描述一下这张图片"},
+          {"type": "image_url", "image_url": {"url": "https://images.cocodataset.org/val2017/000000397133.jpg"}}
+        ]
+      }
+    ],
+    "max_tokens": 256
+  }'
+```
+
+**Python:**
+
+```python
+import requests
+
+url = "http://localhost:8000/v1/chat/completions"
+payload = {
+    "model": "qwen2.5-vlm-0.5b",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "描述一下这张图片"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://images.cocodataset.org/val2017/000000397133.jpg"}
+                }
+            ]
+        }
+    ],
+    "max_tokens": 256
+}
+
+response = requests.post(url, json=payload)
+print(response.json())
+```
+
+**Local Image:**
+
+```python
+import base64
+import requests
+
+with open("image.jpg", "rb") as f:
+    image_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+url = "http://localhost:8000/v1/chat/completions"
+payload = {
+    "model": "qwen2.5-vlm-0.5b",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "描述一下这张图片"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+                }
+            ]
+        }
+    ],
+    "max_tokens": 256
+}
+
+response = requests.post(url, json=payload)
+print(response.json())
+```
+
+### Model Initialization
 
 The model uses `<image>` as the image placeholder. It must be added to the tokenizer as a special token:
 
@@ -170,25 +271,6 @@ This is a cat.
 4. **Batch Processing**: Supports batch processing, but input sequence lengths should be consistent
 5. **Special Token**: Must add `<image>` as special token to tokenizer before use
 
-## Performance Optimization
-
-- SDPA attention implementation for improved computational efficiency
-- Dynamic padding to reduce computational overhead
-- LoRA fine-tuning to reduce trainable parameter count
-- Vision encoder and LLM base parameters frozen; only projector or LoRA parameters are trained
-
-## Project Structure
-
-```
-lab6-nano-vlm/
-├── model.py          # VLM model definition
-├── train.py          # Training script
-├── data_set.py       # Dataset processing
-├── eval.py           # Evaluation script
-├── api.py            # API interface
-├── README.md         # Project documentation
-└── resume/           # Resume related files
-```
 
 ## Demonstration
 
@@ -199,13 +281,13 @@ Below are some examples demonstrating the model's capabilities on various vision
 | | |
 |---|---|
 | **Image** | ![Kitchen Scene](http://images.cocodataset.org/val2017/000000397133.jpg) |
-| **Prompt** | <|im_start|>user\n<image>\n详细描述一下图片内容\n<|im_end|>\n<|im_start|>assistant\n |
+| **Prompt** | 详细描述一下图片内容 |
 | **Response** | 这张图片展示了一位穿着黑色西装、戴着墨镜的男子正在使用一把剪刀。他看起来非常专注，似乎在进行某种工作或活动。\n\n从照片中我们可以看到他的双手紧握着剪刀，并且他在用它来切割一些东西或者物体。这可能是一个裁缝的工作台或者是某个需要精细加工的物品。\n\n此外，在背景上可以看到一个垃圾桶和几个工具箱，这些都可能是用来存放材料或其他工作的设备。\n\n整体来看，这张图片描绘 |
 
 | | |
 |---|---|
 | **Image** | ![Birthday Scene](http://images.cocodataset.org/val2017/000000001000.jpg) |
-| **Prompt** | <|im_start|>user\n<image>\n描述一下这个图片\n<|im_end|>\n<|im_start|>assistant\n |
+| **Prompt** | 描述一下这个图片 |
 | **Response** | 这个图片展示了一群孩子在阳光明媚的天气中，聚集在一起庆祝他们的生日。孩子们穿着鲜艳的衣服和帽子，脸上洋溢着快乐的笑容。\n\n画面中的主角是一位小男孩，他站在一个大圆桌旁，周围坐着他的父母、老师和其他家长。他们围坐在桌子旁边，享受着美食，并且互相分享彼此的故事和笑声。\n\n其他的孩子们则在一旁玩耍，有的正在画画或做手工制作，而另一些人则是阅读书籍或者玩游戏。整个 |
 
 ## License
