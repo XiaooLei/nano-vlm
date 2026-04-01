@@ -25,9 +25,10 @@ app = FastAPI(
 MODEL = None
 DEVICE = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 MODEL_NAME = "qwen2.5-vlm-0.5b"
-
-PROJECTOR_PATH = "checkpoints/projector_final_qwen2.5-0.5b-instruct_clip-vit-base-patch16-3.pt"
-LORA_PATH = "./checkpoints/lora/lora_final_qwen2.5-0.5b-instruct_clip-vit-base-patch16-3.pt"
+VISION_NAME = "google/siglip2-base-patch16-224"
+LLM_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
+PROJECTOR_PATH = "checkpoints/projector_final_qwen2.5-0.5b-instruct_siglip2-base-patch16-224.pt"
+LORA_PATH = ""
 
 
 class MessageContentText(BaseModel):
@@ -57,14 +58,7 @@ def load_model():
     global MODEL
     #print(f"Initializing model, device: {DEVICE}...")
     
-    MODEL = VLMModel()
-    
-    if os.path.exists(LORA_PATH):
-        print(f"Loading LoRA weights: {LORA_PATH}")
-        lora_params = torch.load(LORA_PATH, map_location=DEVICE)
-        MODEL.load_lora(lora_params)
-    else:
-        print(f"LoRA weights not found: {LORA_PATH}")
+    MODEL = VLMModel(llm_name=LLM_NAME, vision_name=VISION_NAME)
     
     if os.path.exists(PROJECTOR_PATH):
         print(f"Loading Projector weights: {PROJECTOR_PATH}")
